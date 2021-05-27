@@ -2,6 +2,8 @@ package com.mysql.protocol.util;
 
 import com.mysql.protocol.Position;
 
+import java.util.Arrays;
+
 /**
  * @description:
  * @author: AlbertXe
@@ -25,5 +27,32 @@ public class MysqlNumberUtil {
             bs[i] = (byte) (value >> (8 * i));
         }
         return bs;
+    }
+
+    public static byte[] readEOF(byte[] bs, Position pos, boolean checkSum) {
+        int len = bs.length - pos.getPos();
+        if (checkSum) {
+            len -= 4;
+        }
+        return readFixByte(bs, pos, len);
+    }
+
+    public static byte[] readFixByte(byte[] bs, Position pos, int len) {
+        int start = pos.getPos();
+        pos.getAndForward(len);
+        return Arrays.copyOfRange(bs, start, start + len);
+    }
+
+    public static byte[] readNul(byte[] bs, Position pos) {
+        int end = -1;
+        int start = pos.getPos();
+        for (int i = start; i < bs.length; i++) {
+            if (bs[i] == 0) {
+                end = i;
+                break;
+            }
+        }
+        pos.getAndForward(end+1-start);
+        return Arrays.copyOfRange(bs, start, end);
     }
 }

@@ -1,9 +1,11 @@
 package com.mysql;
 
 import com.mysql.protocol.PacketHeader;
+import com.mysql.protocol.Request;
 import com.mysql.protocol.util.SocketHolder;
 import com.mysql.protocol.util.SocketUtil;
 import lombok.Data;
+import lombok.SneakyThrows;
 
 /**
  * @description:
@@ -25,7 +27,7 @@ public abstract class AbstractTransport implements BlockingTransport {
     private volatile boolean isOpened =false;
     private volatile boolean isOpeningPhase = false;
 
-    private final PacketHeader packetHeader = new PacketHeader();
+    private final PacketHeader header = new PacketHeader();
 
     public AbstractTransport(String host, int port, String username, String password, String dbName) {
         this.host = host;
@@ -42,6 +44,44 @@ public abstract class AbstractTransport implements BlockingTransport {
     @Override
     public void open() {
         SocketHolder socketHolder = SocketUtil.open(host, port, transportConfig);
-        SocketUtil.doHandShake(socketHolder);
+        isOpeningPhase = true;
+        SocketUtil.doHandShake(socketHolder,this);
+
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
+    public byte[] read() {
+        checkOpen();
+        byte[] bs  = readBytes(4);
+        // 初始化header
+        header.parse(bs);
+        return readBytes(header.getPayloadLen());
+    }
+
+    @SneakyThrows
+    private byte[] readBytes(int len){
+        byte[] bs = new byte[len];
+        int count = 0;
+        while (count < len) {
+            socketHolder.getIs().read(bs, count, len);
+            count += len;
+        }
+        return bs;
+    }
+
+    protected  void checkOpen(){
+        if (!isOpened && !isOpeningPhase) {
+            throw new RuntimeException();
+        }
+    }
+
+    @Override
+    public void write(Request request) {
+
     }
 }

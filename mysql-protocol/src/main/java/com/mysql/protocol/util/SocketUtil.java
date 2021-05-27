@@ -1,5 +1,6 @@
 package com.mysql.protocol.util;
 
+import com.mysql.AbstractTransport;
 import com.mysql.TransportConfig;
 import lombok.SneakyThrows;
 
@@ -28,7 +29,12 @@ public class SocketUtil {
         return new SocketHolder(socket, socket.getInputStream(), socket.getOutputStream());
     }
 
-    public static void doHandShake(SocketHolder socketHolder) {
+    public static void doHandShake(SocketHolder socketHolder, AbstractTransport abstractTransport) {
         HandShakeV10 v10 = new HandShakeV10();
+        byte[] bs = abstractTransport.read();
+        v10.parse(bs);
+        socketHolder.setConnectionId(v10.getConnectionId());
+
+        HandShakeResponseV41
     }
 }
